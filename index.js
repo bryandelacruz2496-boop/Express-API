@@ -7,7 +7,7 @@ app.get('/health', (req, res) => {
 });
 
 app.get('/api/hello', (req, res) => {
-    res.json({ message: 'Hello from EKS!' });
+    res.json({ message: 'Hello from EKS! Thankyou' });
 });
 
 app.listen(port, () => {
