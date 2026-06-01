@@ -7,7 +7,7 @@ on:
 
 env:
   AWS_REGION: ap-southeast-1
-  ECR_REPOSITORY: demo-api
+  ECR_REPOSITORY: demo-api-eks
   EKS_CLUSTER_NAME: eks-cluster-new
 
 jobs:
