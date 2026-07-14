@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Scan to Join Party Guess!</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            background: #14102B;
+            color: #FFF6E9;
+            font-family: system-ui, sans-serif;
+            padding: 32px;
+            text-align: center;
+        }
+
+        h1 {
+            font-size: 42px;
+            margin-bottom: 12px;
+        }
+
+        p {
+            font-size: 20px;
+            opacity: 0.7;
+            margin-bottom: 40px;
+        }
+
+        .qr-box {
+            background: #FFFFFF;
+            padding: 32px;
+            border-radius: 24px;
+            box-shadow: 0 0 80px rgba(255, 209, 102, 0.4);
+        }
+
+        .qr-box img {
+            display: block;
+        }
+
+        .url {
+            margin-top: 24px;
+            font-size: 16px;
+            opacity: 0.6;
+            word-break: break-all;
+        }
+
+        .footer {
+            margin-top: 40px;
+            font-size: 16px;
+            opacity: 0.5;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>🎉 Party Guess</h1>
+    <p>Scan the QR code with your phone to make your guess!</p>
+    <div class="qr-box">
+        <img id="qr" alt="QR Code" />
+    </div>
+    <div class="url" id="url-display"></div>
+    <div class="footer">📱 Make sure your phone is on the same Wi-Fi network</div>
+
+    <script>
+        // This uses a public QR API — no JS library needed, guaranteed to render
+        const GAME_URL = "http://192.168.68.58:3000";
+        const qrImg = document.getElementById("qr");
+        const urlDisplay = document.getElementById("url-display");
+
+        qrImg.src = "https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=" + encodeURIComponent(GAME_URL);
+        qrImg.width = 300;
+        qrImg.height = 300;
+        urlDisplay.textContent = GAME_URL;
+    </script>
+</body>
+
+</html>
