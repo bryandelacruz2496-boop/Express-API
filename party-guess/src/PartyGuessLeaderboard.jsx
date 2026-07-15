@@ -1237,11 +1237,12 @@ export default function PartyGuessLeaderboard() {
     const bubble = bibs.length ? bibs[bubbleIdx % bibs.length] : null;
     const configuredPartyLink = (config.partyLink || "").trim();
     const configuredLinkIsLocal = /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?/i.test(configuredPartyLink);
+    // Prefer a configured public party link; otherwise use whatever origin the
+    // dashboard was opened from. Open the dashboard via your LAN IP (the Vite
+    // "Network" URL, e.g. http://192.168.x.x:3000) so the QR is scannable by phones.
     const guestUrl = configuredPartyLink && !configuredLinkIsLocal
         ? configuredPartyLink
-        : window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1"
-            ? "http://192.168.68.58:3000/?guest=1"
-            : `${window.location.origin}/?guest=1`;
+        : `${window.location.origin}/?guest=1`;
     const leaderIndex = total > 0 ? counts.indexOf(Math.max(...counts)) : -1;
     const leadingTeam = leaderIndex >= 0 ? config.options[leaderIndex] : "Waiting";
     const nameIdeaCount = Object.keys(nameIdeas).length;
