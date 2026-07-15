@@ -436,7 +436,7 @@ html:has(.pg-guest-page), body:has(.pg-guest-page) { overflow:hidden; }
   .pg-guest-card { padding:10px 12px; }
 }
 .pg-confetti { position:fixed; inset:0; pointer-events:none; overflow:hidden; z-index:4; }
-.pg-cpiece { position:absolute; top:-20px; width:10px; height:16px; border-radius:2px; animation:pgfall linear forwards; }
+.pg-cpiece { position:absolute; top:-20px; width:10px; height:16px; border-radius:2px; animation:pgfall linear infinite; }
 @keyframes pgfall { 0%{transform:translateY(-5vh) rotate(0);opacity:1;} 100%{transform:translateY(110vh) rotate(720deg);opacity:.9;} }
 
 @media (prefers-reduced-motion: reduce) {
