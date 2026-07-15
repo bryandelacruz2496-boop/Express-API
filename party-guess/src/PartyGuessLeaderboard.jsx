@@ -880,8 +880,26 @@ export default function PartyGuessLeaderboard() {
                 || window.location.hash.includes("guest");
             if (isGuest) {
                 setPhase(cfg ? "guest" : "setup");
+            } else if (cfg) {
+                setPhase("board");
             } else {
-                setPhase(cfg ? "board" : "setup");
+                // No game configured yet — seed a default gender-reveal so the
+                // dashboard opens immediately instead of the setup screen. The
+                // host can still reconfigure via the reset control.
+                const seeded = {
+                    question: "Boy or girl?",
+                    options: ["Boy", "Girl"],
+                    bonusQs: ["Guess the birth weight", "Guess the due date"],
+                    pin: "",
+                    revealed: false, answer: null, revealAt: null, prize: null, partyLink: "",
+                };
+                try {
+                    await window.storage.set(CONFIG_KEY, JSON.stringify(seeded), true);
+                    setConfig(seeded);
+                    setPhase("board");
+                } catch {
+                    setPhase("setup");
+                }
             }
         })();
     }, [refresh]);
