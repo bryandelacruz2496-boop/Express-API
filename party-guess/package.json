@@ -1,0 +1,24 @@
+{
+    "name": "party-guess-leaderboard",
+    "version": "1.0.0",
+    "private": true,
+    "type": "module",
+    "scripts": {
+        "dev": "vite",
+        "server": "node server.js",
+        "build": "vite build",
+        "preview": "vite preview"
+    },
+    "dependencies": {
+        "express": "^5.2.1",
+        "react": "^18.3.1",
+        "react-dom": "^18.3.1",
+        "react-qr-code": "^2.2.0",
+        "tone": "^14.7.77",
+        "ws": "^8.21.0"
+    },
+    "devDependencies": {
+        "@vitejs/plugin-react": "^4.3.1",
+        "vite": "^5.4.2"
+    }
+}
