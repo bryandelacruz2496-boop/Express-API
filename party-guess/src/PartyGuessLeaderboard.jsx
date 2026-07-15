@@ -335,7 +335,7 @@ html:has(.pg-guest-page), body:has(.pg-guest-page) { overflow:hidden; }
 .pg-live-pill { display:inline-flex; align-items:center; gap:7px; width:max-content; padding:7px 11px; border-radius:999px; background:rgba(232,238,243,.82); border:1px solid rgba(143,168,184,.55); color:#526174; font-size:10px; font-weight:900; letter-spacing:.14em; text-transform:uppercase; }
 .pg-hero-content .pg-question { margin-top:12px; text-align:center; }
 .pg-hero-content .pg-sub { text-align:center; }
-.pg-hero-stats { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:10px; width:100%; max-width:760px; margin:20px auto 0; }
+.pg-hero-stats { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px; width:100%; max-width:520px; margin:20px auto 0; }
 .pg-mini-stat { min-width:0; display:flex; align-items:center; gap:10px; padding:12px 13px; border-radius:17px; border:1px solid rgba(130,150,170,.42); box-shadow:0 8px 18px rgba(45,69,91,.10); backdrop-filter:blur(8px); transition:transform .18s ease,box-shadow .18s ease; }
 .pg-mini-stat:hover { transform:translateY(-3px); box-shadow:0 12px 22px rgba(45,69,91,.16); }
 .pg-mini-stat > span { font-size:24px; }
@@ -408,7 +408,6 @@ html:has(.pg-guest-page), body:has(.pg-guest-page) { overflow:hidden; }
 @media (max-width:700px) {
   .pg-dashboard-hero { min-height:0; }
   .pg-hero-stats { grid-template-columns:repeat(2,minmax(0,1fr)); }
-  .pg-mini-stat:last-child { grid-column:1/-1; }
   .pg-mini-stat { padding:10px; }
   .pg-reveal-controls { flex-direction:row; flex-wrap:nowrap; width:auto; max-width:100%; gap:3px; padding:2px; }
   .pg-reveal-label { font-size:7px; }
@@ -1400,8 +1399,6 @@ export default function PartyGuessLeaderboard() {
     const guestUrl = configuredPartyLink && !configuredLinkIsLocal
         ? configuredPartyLink
         : `${guestOrigin}/?guest=1`;
-    const leaderIndex = total > 0 ? counts.indexOf(Math.max(...counts)) : -1;
-    const leadingTeam = leaderIndex >= 0 ? config.options[leaderIndex] : "Waiting";
     const nameIdeaCount = Object.keys(nameIdeas).length;
 
     return (
@@ -1473,10 +1470,6 @@ export default function PartyGuessLeaderboard() {
                         <div className="pg-hero-stats">
                             <div className="pg-mini-stat pg-stat-guests">
                                 <span>🎉</span><div><b>{total}</b><small>Guests joined</small></div>
-                            </div>
-                            <div className="pg-mini-stat pg-stat-leading">
-                                <span>{leaderIndex === 0 ? "💙" : leaderIndex === 1 ? "🎀" : "🏁"}</span>
-                                <div><b>{leadingTeam}</b><small>Leading team</small></div>
                             </div>
                             <div className="pg-mini-stat pg-stat-names">
                                 <span>🍼</span><div><b>{nameIdeaCount}</b><small>Name ideas</small></div>
