@@ -259,6 +259,10 @@ html:has(.pg-guest-page), body:has(.pg-guest-page) { overflow:hidden; }
 .pg-reset-btn:hover:not(:disabled) { transform:translateY(-2px); box-shadow:0 10px 20px rgba(89,50,65,.20); }
 .pg-reset-btn:active:not(:disabled) { transform:scale(.97); }
 .pg-reset-btn:disabled { opacity:.48; cursor:not-allowed; box-shadow:none; }
+.pg-sound-btn { min-height:42px; padding:9px 12px; border:1px solid #9CC9DD; border-radius:12px; background:linear-gradient(135deg,#BFE3F2,#9FD0E8); color:#245063; font-family:inherit; font-size:12px; font-weight:900; cursor:pointer; box-shadow:0 7px 16px rgba(36,80,99,.14); transition:transform .16s ease,box-shadow .16s ease; }
+.pg-sound-btn[data-on="true"] { background:linear-gradient(135deg,#8FD3A6,#63BE86); border-color:#5FAE7E; color:#164E33; }
+.pg-sound-btn:hover { transform:translateY(-2px); box-shadow:0 10px 20px rgba(36,80,99,.20); }
+.pg-sound-btn:active { transform:scale(.97); }
 .pg-reset-error { max-width:170px; color:#9C314F; font-size:10px; line-height:1.3; text-align:center; }
 .pg-qr-url { display:block; max-width:150px; margin-top:4px; color:#657086; font-size:9px; line-height:1.25; overflow-wrap:anywhere; }
 .pg-race-card { margin-top:18px; background:#fff; border:1px solid #e8edf6; border-radius:24px; padding:20px 22px 16px; box-shadow:0 13px 34px rgba(72,87,120,.08); }
@@ -1114,6 +1118,42 @@ export default function PartyGuessLeaderboard() {
 
     const enableSound = async () => { try { const T = await getTone(); await T.start(); setSoundOn(true); } catch { } };
 
+    // Gentle looping background music for when the board is idle.
+    const ambientRef = useRef(null);
+
+    const startAmbient = useCallback(async () => {
+        const T = await getTone();
+        await T.start();
+        if (ambientRef.current) return T;
+        const synth = new T.PolySynth(T.Synth).toDestination();
+        synth.volume.value = -22;
+        synth.set({ oscillator: { type: "triangle" }, envelope: { attack: 0.5, decay: 0.3, sustain: 0.4, release: 1.6 } });
+        // Soft lullaby-ish arpeggio that loops forever.
+        const notes = ["C4", "E4", "G4", "E4", "F4", "A4", "G4", "E4", "D4", "F4", "A4", "F4", "E4", "G4", "C5", "G4"];
+        let i = 0;
+        const loop = new T.Loop((time) => {
+            synth.triggerAttackRelease(notes[i % notes.length], "8n", time);
+            i++;
+        }, "4n");
+        T.Transport.bpm.value = 64;
+        loop.start(0);
+        T.Transport.start();
+        ambientRef.current = { synth, loop, T };
+        return T;
+    }, []);
+
+    const stopAmbient = useCallback(() => {
+        const a = ambientRef.current;
+        if (!a) return;
+        try { a.loop.stop(); a.loop.dispose(); a.synth.dispose(); a.T.Transport.stop(); } catch { }
+        ambientRef.current = null;
+    }, []);
+
+    const toggleSound = useCallback(async () => {
+        if (soundOn) { stopAmbient(); setSoundOn(false); }
+        else { try { await startAmbient(); setSoundOn(true); } catch { } }
+    }, [soundOn, startAmbient, stopAmbient]);
+
     // Celebratory gender-reveal fanfare — boy in C major, girl a touch brighter
     // in D major — capped so it only plays once per reveal.
     const playRevealFanfare = useCallback(async (ans) => {
@@ -1148,6 +1188,8 @@ export default function PartyGuessLeaderboard() {
     const nameIdeas = {};
     for (const g of list) if (g.nameIdea) nameIdeas[g.nameIdea] = (nameIdeas[g.nameIdea] || 0) + 1;
 
+    const revealActive = showAnswer && !revealDismissed;
+
     // Play the fanfare on any dashboard that has sound enabled (e.g. the big
     // screen, or a reveal that arrives via the countdown/live sync). The host's
     // own Reveal click is handled directly in revealNow.
@@ -1155,6 +1197,17 @@ export default function PartyGuessLeaderboard() {
         if (showAnswer && soundOn) playRevealFanfare(answer);
         if (!showAnswer) revealSoundPlayed.current = false;
     }, [showAnswer, soundOn, answer, playRevealFanfare]);
+
+    // Duck the background music while the reveal screen is up so the fanfare
+    // stands out, then bring it back when the modal is dismissed.
+    useEffect(() => {
+        const a = ambientRef.current;
+        if (!a) return;
+        try { a.synth.volume.rampTo(revealActive ? -60 : -22, 0.4); } catch { }
+    }, [revealActive]);
+
+    // Stop the music if the component unmounts.
+    useEffect(() => () => stopAmbient(), [stopAmbient]);
 
     /* ---------- screens ---------- */
     if (phase === "loading") {
@@ -1410,6 +1463,14 @@ export default function PartyGuessLeaderboard() {
                             <span>SCAN TO MAKE A GUESS</span>
                             <small className="pg-qr-url">{guestUrl.replace(/^https?:\/\//, "")}</small>
                         </div>
+                        <button
+                            className="pg-sound-btn"
+                            data-on={soundOn}
+                            onClick={toggleSound}
+                            title={soundOn ? "Turn party music off" : "Turn party music on"}
+                        >
+                            {soundOn ? "🔊 Sound on" : "🔈 Turn on sound"}
+                        </button>
                         <button
                             className="pg-reset-btn"
                             onClick={resetGuesses}
