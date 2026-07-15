@@ -971,6 +971,7 @@ export default function PartyGuessLeaderboard() {
 
     const effectiveRevealed = !!config?.revealed || (!!config?.revealAt && now >= config.revealAt);
     const popPlayed = useRef(false);
+    const revealSoundPlayed = useRef(false);
     useEffect(() => {
         if (effectiveRevealed && config?.revealAt && !popPlayed.current) {
             popPlayed.current = true;
@@ -1059,6 +1060,10 @@ export default function PartyGuessLeaderboard() {
 
     const revealNow = async () => {
         if (pendingAnswer == null) return;
+        // The click is a user gesture, so audio can start here even if the
+        // sound toggle was never pressed. Reset so "Show again" replays it.
+        revealSoundPlayed.current = false;
+        playRevealFanfare(pendingAnswer);
         const saved = await saveConfig({ ...config, revealed: true, answer: pendingAnswer, revealAt: null });
         if (saved) setRevealDismissed(false);
     };
@@ -1109,6 +1114,27 @@ export default function PartyGuessLeaderboard() {
 
     const enableSound = async () => { try { const T = await getTone(); await T.start(); setSoundOn(true); } catch { } };
 
+    // Celebratory gender-reveal fanfare — boy in C major, girl a touch brighter
+    // in D major — capped so it only plays once per reveal.
+    const playRevealFanfare = useCallback(async (ans) => {
+        if (revealSoundPlayed.current) return;
+        revealSoundPlayed.current = true;
+        try {
+            const T = await getTone();
+            await T.start();
+            const t0 = T.now();
+            const chord = new T.PolySynth(T.Synth).toDestination();
+            chord.volume.value = -8;
+            const melody = ans === 0
+                ? ["C4", "E4", "G4", "C5"]
+                : ["D4", "F#4", "A4", "D5"];
+            melody.forEach((n, i) => chord.triggerAttackRelease(n, "8n", t0 + i * 0.15));
+            const finalChord = ans === 0 ? ["C5", "E5", "G5"] : ["D5", "F#5", "A5"];
+            chord.triggerAttackRelease(finalChord, "1n", t0 + 0.7);
+            setTimeout(() => chord.dispose(), 3000);
+        } catch { }
+    }, []);
+
     /* ---------- derived ---------- */
     const list = Object.values(guesses).sort((a, b) => a.t - b.t);
     const total = list.length;
@@ -1121,6 +1147,14 @@ export default function PartyGuessLeaderboard() {
     const bibs = list.filter((g) => g.bib);
     const nameIdeas = {};
     for (const g of list) if (g.nameIdea) nameIdeas[g.nameIdea] = (nameIdeas[g.nameIdea] || 0) + 1;
+
+    // Play the fanfare on any dashboard that has sound enabled (e.g. the big
+    // screen, or a reveal that arrives via the countdown/live sync). The host's
+    // own Reveal click is handled directly in revealNow.
+    useEffect(() => {
+        if (showAnswer && soundOn) playRevealFanfare(answer);
+        if (!showAnswer) revealSoundPlayed.current = false;
+    }, [showAnswer, soundOn, answer, playRevealFanfare]);
 
     /* ---------- screens ---------- */
     if (phase === "loading") {
