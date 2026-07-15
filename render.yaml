@@ -1,0 +1,23 @@
+# Render blueprint — single web service that serves the built frontend and the
+# API/WebSocket on one port.
+services:
+  - type: web
+    name: party-guess
+    runtime: node
+    rootDir: party-guess
+    plan: free
+    buildCommand: npm install && npm run build
+    startCommand: npm start
+    envVars:
+      - key: NODE_VERSION
+        value: "20"
+    # To keep the game config/guesses across restarts, upgrade to a paid plan
+    # and attach a persistent disk, then set DATA_FILE to a path on that disk:
+    #
+    # disk:
+    #   name: party-data
+    #   mountPath: /var/data
+    #   sizeGB: 1
+    # envVars:
+    #   - key: DATA_FILE
+    #     value: /var/data/data.json

@@ -2,14 +2,19 @@ import express from 'express';
 import { createServer } from 'http';
 import { WebSocketServer } from 'ws';
 import { readFileSync, writeFileSync, existsSync } from 'fs';
+import { fileURLToPath } from 'url';
+import { dirname, join } from 'path';
+
+const __dirname = dirname(fileURLToPath(import.meta.url));
 
 const app = express();
 const server = createServer(app);
-const wss = new WebSocketServer({ server });
+// Dedicated path so it doesn't clash with Vite's HMR socket in local dev.
+const wss = new WebSocketServer({ server, path: '/ws' });
 
 app.use(express.json({ limit: '2mb' }));
 
-// CORS — allow requests from any origin (for local dev)
+// CORS — allow requests from any origin (harmless when served same-origin).
 app.use((req, res, next) => {
     res.header('Access-Control-Allow-Origin', '*');
     res.header('Access-Control-Allow-Methods', 'GET, POST, DELETE, OPTIONS');
@@ -18,7 +23,9 @@ app.use((req, res, next) => {
     next();
 });
 
-const DATA_FILE = './data.json';
+// Data file location. Override with DATA_FILE (e.g. a Render persistent disk
+// path like /var/data/data.json) to keep the game config across restarts.
+const DATA_FILE = process.env.DATA_FILE || join(__dirname, 'data.json');
 
 // Load or initialize data
 let store = {};
@@ -74,7 +81,18 @@ wss.on('connection', (ws) => {
     ws.send(JSON.stringify({ type: 'connected' }));
 });
 
-const PORT = 3001;
+// Serve the built frontend (only present after `vite build`). In local dev the
+// frontend is served by Vite, so this block is skipped.
+const distDir = join(__dirname, 'dist');
+if (existsSync(join(distDir, 'index.html'))) {
+    app.use(express.static(distDir));
+    // SPA fallback for any non-API route.
+    app.get(/^(?!\/api).*/, (req, res) => {
+        res.sendFile(join(distDir, 'index.html'));
+    });
+}
+
+const PORT = process.env.PORT || 3001;
 server.listen(PORT, '0.0.0.0', () => {
-    console.log(`Storage server running on http://0.0.0.0:${PORT}`);
+    console.log(`Server running on http://0.0.0.0:${PORT}`);
 });

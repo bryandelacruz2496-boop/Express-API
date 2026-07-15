@@ -3,8 +3,11 @@
  * All devices (phone guests + host dashboard) share the same data.
  */
 
-const API_BASE = `http://${window.location.hostname}:3001`;
-const WS_URL = `ws://${window.location.hostname}:3001`;
+// Talk to the same origin that served the page. In local dev Vite proxies
+// /api and /ws to the backend (see vite.config.js); in production the Express
+// server serves both the app and the API on one port.
+const API_BASE = '';
+const WS_URL = `${window.location.protocol === 'https:' ? 'wss' : 'ws'}://${window.location.host}/ws`;
 
 // WebSocket for real-time updates
 let ws = null;
