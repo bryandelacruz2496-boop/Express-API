@@ -4,6 +4,7 @@ import { WebSocketServer } from 'ws';
 import { readFileSync, writeFileSync, existsSync } from 'fs';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
+import os from 'os';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
@@ -74,6 +75,22 @@ app.get('/api/storage-list/:prefix', (req, res) => {
     const prefix = req.params.prefix;
     const keys = Object.keys(store).filter((k) => k.startsWith(prefix));
     res.json({ keys });
+});
+
+// The server's LAN IPv4 — used to build a phone-scannable guest QR URL when
+// the dashboard is opened on localhost during local testing.
+function getLanIp() {
+    const nets = os.networkInterfaces();
+    for (const name of Object.keys(nets)) {
+        for (const net of nets[name] || []) {
+            if (net.family === 'IPv4' && !net.internal) return net.address;
+        }
+    }
+    return null;
+}
+
+app.get('/api/lan-ip', (req, res) => {
+    res.json({ ip: getLanIp() });
 });
 
 // WebSocket — clients connect to get real-time updates

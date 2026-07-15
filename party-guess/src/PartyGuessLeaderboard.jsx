@@ -837,6 +837,7 @@ export default function PartyGuessLeaderboard() {
     const [pendingAnswer, setPendingAnswer] = useState(null);
     const [revealDismissed, setRevealDismissed] = useState(false);
     const [linkInput, setLinkInput] = useState("");
+    const [lanHost, setLanHost] = useState(null);
     const knownKeys = useRef(new Set());
 
     const refresh = useCallback(async () => {
@@ -880,6 +881,17 @@ export default function PartyGuessLeaderboard() {
             }
         })();
     }, [refresh]);
+
+    // When testing on localhost, ask the server for its LAN IP so the guest
+    // QR code points to an address phones can actually reach.
+    useEffect(() => {
+        const h = window.location.hostname;
+        if (h !== "localhost" && h !== "127.0.0.1") return;
+        fetch("/api/lan-ip")
+            .then((r) => r.json())
+            .then((d) => { if (d && d.ip) setLanHost(d.ip); })
+            .catch(() => {});
+    }, []);
 
     // Disable browser and touch zoom only on the guest guessing form.
     useEffect(() => {
@@ -1237,12 +1249,20 @@ export default function PartyGuessLeaderboard() {
     const bubble = bibs.length ? bibs[bubbleIdx % bibs.length] : null;
     const configuredPartyLink = (config.partyLink || "").trim();
     const configuredLinkIsLocal = /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?/i.test(configuredPartyLink);
-    // Prefer a configured public party link; otherwise use whatever origin the
-    // dashboard was opened from. Open the dashboard via your LAN IP (the Vite
-    // "Network" URL, e.g. http://192.168.x.x:3000) so the QR is scannable by phones.
+    // Prefer a configured public party link. Otherwise use the current origin,
+    // but if the dashboard was opened on localhost, swap in the server's LAN IP
+    // (fetched above) so the QR code is scannable by phones on the same Wi-Fi.
+    const guestOrigin = (() => {
+        const h = window.location.hostname;
+        if ((h === "localhost" || h === "127.0.0.1") && lanHost) {
+            const port = window.location.port ? `:${window.location.port}` : "";
+            return `${window.location.protocol}//${lanHost}${port}`;
+        }
+        return window.location.origin;
+    })();
     const guestUrl = configuredPartyLink && !configuredLinkIsLocal
         ? configuredPartyLink
-        : `${window.location.origin}/?guest=1`;
+        : `${guestOrigin}/?guest=1`;
     const leaderIndex = total > 0 ? counts.indexOf(Math.max(...counts)) : -1;
     const leadingTeam = leaderIndex >= 0 ? config.options[leaderIndex] : "Waiting";
     const nameIdeaCount = Object.keys(nameIdeas).length;
