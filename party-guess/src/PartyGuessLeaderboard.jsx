@@ -868,13 +868,15 @@ export default function PartyGuessLeaderboard() {
     useEffect(() => {
         (async () => {
             const cfg = await refresh();
-            const isBoard = window.location.pathname === "/board"
-                || window.location.search.includes("board")
-                || window.location.hash.includes("board");
-            if (isBoard) {
-                setPhase(cfg ? "board" : "setup");
-            } else {
+            // Guests reach the guessing form via the QR link (/?guest=1).
+            // Everything else (including the root URL) opens the dashboard.
+            const isGuest = window.location.pathname === "/guest"
+                || window.location.search.includes("guest")
+                || window.location.hash.includes("guest");
+            if (isGuest) {
                 setPhase(cfg ? "guest" : "setup");
+            } else {
+                setPhase(cfg ? "board" : "setup");
             }
         })();
     }, [refresh]);
