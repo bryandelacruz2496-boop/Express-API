@@ -1118,40 +1118,72 @@ export default function PartyGuessLeaderboard() {
 
     const enableSound = async () => { try { const T = await getTone(); await T.start(); setSoundOn(true); } catch { } };
 
-    // Gentle looping background music for when the board is idle.
+    // Upbeat looping party music for when the board is idle.
     const ambientRef = useRef(null);
+    const toneRef = useRef(null);
 
-    const startAmbient = useCallback(async () => {
-        const T = await getTone();
-        await T.start();
-        if (ambientRef.current) return T;
-        const synth = new T.PolySynth(T.Synth).toDestination();
-        synth.volume.value = -22;
-        synth.set({ oscillator: { type: "triangle" }, envelope: { attack: 0.5, decay: 0.3, sustain: 0.4, release: 1.6 } });
-        // Soft lullaby-ish arpeggio that loops forever.
-        const notes = ["C4", "E4", "G4", "E4", "F4", "A4", "G4", "E4", "D4", "F4", "A4", "F4", "E4", "G4", "C5", "G4"];
-        let i = 0;
+    // Preload Tone.js up front so the "turn on sound" click can start audio
+    // immediately, without an async import breaking the user-gesture unlock.
+    useEffect(() => {
+        getTone().then((T) => { toneRef.current = T; }).catch(() => {});
+    }, []);
+
+    const startAmbient = useCallback((T) => {
+        if (ambientRef.current) return;
+        // A gain bus so we can duck the music during the reveal without
+        // affecting the fanfare (which plays straight to the destination).
+        const bus = new T.Gain(1).toDestination();
+
+        const kick = new T.MembraneSynth().connect(bus);
+        kick.volume.value = -4;
+        const bass = new T.Synth({ oscillator: { type: "sawtooth" }, envelope: { attack: 0.01, decay: 0.2, sustain: 0.3, release: 0.2 } }).connect(bus);
+        bass.volume.value = -12;
+        const lead = new T.PolySynth(T.Synth).connect(bus);
+        lead.volume.value = -7;
+        lead.set({ oscillator: { type: "triangle" }, envelope: { attack: 0.01, decay: 0.15, sustain: 0.2, release: 0.25 } });
+
+        const melody = ["E4", "G4", "A4", "G4", "E4", "C4", "D4", "E4", "G4", "A4", "C5", "A4", "G4", "E4", "D4", "G4"];
+        const bassline = ["C2", null, "G2", null, "A2", null, "F2", null, "C2", null, "G2", null, "A2", null, "F2", "G2"];
+        let step = 0;
         const loop = new T.Loop((time) => {
-            synth.triggerAttackRelease(notes[i % notes.length], "8n", time);
-            i++;
-        }, "4n");
-        T.Transport.bpm.value = 64;
+            const s = step % 16;
+            if (s % 2 === 0) kick.triggerAttackRelease("C2", "16n", time);
+            if (bassline[s]) bass.triggerAttackRelease(bassline[s], "8n", time);
+            if (melody[s]) lead.triggerAttackRelease(melody[s], "16n", time);
+            step++;
+        }, "8n");
+
+        T.Transport.bpm.value = 124;
         loop.start(0);
         T.Transport.start();
-        ambientRef.current = { synth, loop, T };
-        return T;
+        ambientRef.current = { bus, kick, bass, lead, loop, T };
     }, []);
 
     const stopAmbient = useCallback(() => {
         const a = ambientRef.current;
         if (!a) return;
-        try { a.loop.stop(); a.loop.dispose(); a.synth.dispose(); a.T.Transport.stop(); } catch { }
+        try {
+            a.loop.stop(); a.loop.dispose();
+            a.kick.dispose(); a.bass.dispose(); a.lead.dispose(); a.bus.dispose();
+            a.T.Transport.stop();
+        } catch { }
         ambientRef.current = null;
     }, []);
 
     const toggleSound = useCallback(async () => {
-        if (soundOn) { stopAmbient(); setSoundOn(false); }
-        else { try { await startAmbient(); setSoundOn(true); } catch { } }
+        if (soundOn) { stopAmbient(); setSoundOn(false); return; }
+        try {
+            const T = toneRef.current || await getTone();
+            toneRef.current = T;
+            await T.start(); // resume the audio context on this user gesture
+            // Instant confirmation blip so you know audio is unlocked.
+            const blip = new T.Synth().toDestination();
+            blip.volume.value = -6;
+            blip.triggerAttackRelease("C5", "8n");
+            setTimeout(() => blip.dispose(), 500);
+            startAmbient(T);
+            setSoundOn(true);
+        } catch { }
     }, [soundOn, startAmbient, stopAmbient]);
 
     // Celebratory gender-reveal fanfare — boy in C major, girl a touch brighter
@@ -1203,7 +1235,7 @@ export default function PartyGuessLeaderboard() {
     useEffect(() => {
         const a = ambientRef.current;
         if (!a) return;
-        try { a.synth.volume.rampTo(revealActive ? -60 : -22, 0.4); } catch { }
+        try { a.bus.gain.rampTo(revealActive ? 0.08 : 1, 0.4); } catch { }
     }, [revealActive]);
 
     // Stop the music if the component unmounts.
