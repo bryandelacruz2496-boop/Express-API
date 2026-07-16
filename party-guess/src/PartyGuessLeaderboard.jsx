@@ -888,7 +888,7 @@ export default function PartyGuessLeaderboard() {
                 const seeded = {
                     question: "Boy or girl?",
                     options: ["Boy", "Girl"],
-                    bonusQs: ["Guess the birth weight", "Guess the due date"],
+                    bonusQs: [],
                     pin: "",
                     revealed: false, answer: null, revealAt: null, prize: null, partyLink: "",
                 };
