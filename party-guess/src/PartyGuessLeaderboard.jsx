@@ -1286,7 +1286,7 @@ export default function PartyGuessLeaderboard() {
                         <input className="pg-input" value={optText} onChange={(e) => setOptText(e.target.value)} placeholder="Boy, Girl" />
                         <label className="pg-label">Bonus predictions (optional, one per line)</label>
                         <textarea className="pg-textarea" value={bonusText} onChange={(e) => setBonusText(e.target.value)}
-                            placeholder={"Guess the birth weight\nGuess the due date"} />
+                            placeholder={"One prediction per line"} />
                         <label className="pg-label">Host PIN</label>
                         <input className="pg-input" value={pin} onChange={(e) => setPin(e.target.value)} placeholder="A short code only you know" />
                         {error && <div className="pg-err">{error}</div>}
